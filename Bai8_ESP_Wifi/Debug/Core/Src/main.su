@@ -1,0 +1,6 @@
+main.c:83:5:main	8	static
+main.c:150:6:SystemClock_Config	88	static
+main.c:191:6:system_init	8	static
+main.c:203:6:test_LedDebug	8	static
+main.c:209:6:send_Esp	72	static
+main.c:227:6:Error_Handler	4	static,ignoring_inline_asm

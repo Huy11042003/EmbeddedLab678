@@ -1,0 +1,14 @@
+main.c:148:6:SystemClock_Config	88	static,ignoring_inline_asm
+main.c:189:6:system_init	8	static
+main.c:200:6:set_value	16	static
+main.c:208:6:draw_axes	16	static
+main.c:217:6:plot_graph	24	static
+main.c:227:6:test_LedDebug	0	static
+main.c:234:9:isButtonUp	0	static
+main.c:242:9:isButtonDown	0	static
+main.c:250:9:isButtonRight	0	static
+main.c:260:6:test_Adc	32	static
+main.c:88:5:main	8	static
+main.c:287:6:test_Buzzer	8	static
+main.c:302:6:buttonHandle	8	static
+main.c:372:6:Error_Handler	0	static,ignoring_inline_asm
