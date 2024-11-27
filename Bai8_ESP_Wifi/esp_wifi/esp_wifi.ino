@@ -2,10 +2,14 @@
 #include "Adafruit_MQTT.h"
 #include "Adafruit_MQTT_Client.h"
 
+#define UART_BUFFER_SIZE 128
+char uartBuffer[UART_BUFFER_SIZE];
+int uartIndex = 0;
+
 //Wifi name
 #define WLAN_SSID       "Huy"
 //Wifi password
-#define WLAN_PASS       "1234567890"
+#define WLAN_PASS       ""
 
 //setup Adafruit
 #define AIO_SERVER      "io.adafruit.com"
@@ -13,7 +17,7 @@
 //fill your username                   
 #define AIO_USERNAME    "thuocsolai"
 //fill your key
-#define AIO_KEY         "aio_kSVy43P7kNADJXgbbL0xcj9Q8Frt"
+#define AIO_KEY         ""
 
 //setup MQTT
 WiFiClient client;
@@ -71,10 +75,23 @@ void loop() {
   
   //read serial
   if(Serial.available()){
-    int msg = Serial.read();
-    if(msg == 'o') Serial.print('O');
-    else if(msg == 'a') light_pub.publish(0);
-    else if(msg == 'A') light_pub.publish(1);
+    char incomingChar = Serial.read();
+
+    // Append to buffer until the end marker '#'
+    if (incomingChar != '#') {
+      if (uartIndex < UART_BUFFER_SIZE - 1) {
+        uartBuffer[uartIndex++] = incomingChar;
+        uartBuffer[uartIndex] = '\0'; // Null-terminate
+      }
+    else if(incomingChar == 'o') Serial.print('O');
+    else if(incomingChar == 'a') light_pub.publish(0);
+    else if(incomingChar == 'A') light_pub.publish(1);
+    } else {
+      // Process message when '#' is received
+      processUARTMessage(uartBuffer);
+      uartIndex = 0; // Reset buffer index
+      memset(uartBuffer, 0, UART_BUFFER_SIZE); // Clear buffer
+    }
   }
 
   led_counter++;
@@ -88,4 +105,10 @@ void loop() {
     digitalWrite(2, led_status);
   }
   delay(10);
+}
+void processUARTMessage(char *message) {
+  if (strncmp(message, "!TEMP:", 6) == 0) {
+    float temp = atof(message + 6); // Convert string to float
+    light_pub.publish(temp);
+  }
 }

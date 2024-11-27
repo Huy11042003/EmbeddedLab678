@@ -46,12 +46,14 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-#define HEIGHT 20
-#define WIDTH 40
-int snakeTailX[100], snakeTailY[100];
-int snakeTailLen;
-int gameover, key, score;
+#define HEIGHT 170
+#define WIDTH 170
+int snakeTailX[4096], snakeTailY[4096];
+int snakeTailLen = 5;
+int gameover = 1;
+int key, score;
 int x, y, fruitx, fruity;
+int navigatorIndex = 0;
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -67,10 +69,11 @@ int x, y, fruitx, fruity;
 
 /* USER CODE BEGIN PV */
 #define INIT 0
-#define DRAW 1
-#define CLEAR 2
+#define START 1
+#define PLAY 2
+#define GAMEOVER 3
 
-int draw_Status = INIT;
+int game_Status = INIT;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -130,22 +133,26 @@ int main(void)
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
  touch_Adjust();
- lcd_Clear(BLACK);
+lcd_Clear(BLACK);
  while (1)
   {
 	  //scan touch screen
 	  touch_Scan();
 	  //check if touch screen is touched
-	  if(touch_IsTouched() && draw_Status == DRAW){
-            //draw a point at the touch position
-		  lcd_DrawPoint(touch_GetX(), touch_GetY(), RED);
-	  }
+//	  if(touch_IsTouched() && draw_Status == DRAW){
+//            //draw a point at the touch position
+//		  lcd_DrawPoint(touch_GetX(), touch_GetY(), RED);
+//	  }
 	  // 50ms task
 	  if(flag_timer2 == 1){
 		  flag_timer2 = 0;
 		  touchProcess();
-		  test_LedDebug();
+		  if(!gameover){
+			  logic();
+	  //		  draw();
+		  }
 	  }
+
 
     /* USER CODE END WHILE */
 
@@ -216,31 +223,78 @@ void test_LedDebug(){
 	}
 }
 
-uint8_t isButtonClear(){
+
+uint8_t isButtonStart(){
 	if(!touch_IsTouched()) return 0;
-	return touch_GetX() > 60 && touch_GetX() < 180 && touch_GetY() > 10 && touch_GetY() < 60;
+	return touch_GetX() > 10 && touch_GetX() < 130 && touch_GetY() > 250 && touch_GetY() < 300;
+}
+
+uint8_t isNavigatorTouch(){
+	if(!touch_IsTouched()) return 0;
+	if (touch_GetX() >= 100 && touch_GetX() <= 140 && touch_GetY() >= 180 && touch_GetY() <= 220) {
+		navigatorIndex = 1;
+	} else if (touch_GetX() >= 100 && touch_GetX() <= 140 && touch_GetY() >= 280 && touch_GetY() <= 320) {
+		navigatorIndex = 2;
+	} else if (touch_GetX() >= 50 && touch_GetX() <= 90 && touch_GetY() >= 230 && touch_GetY() <= 270) {
+		navigatorIndex = 3;
+	} else if (touch_GetX() >= 150 && touch_GetX() <= 190 && touch_GetY() >= 230 && touch_GetY() <= 270) {
+		navigatorIndex = 4;
+	}
+	return 1;
 }
 
 void touchProcess(){
-	switch (draw_Status) {
+	switch (game_Status) {
 		case INIT:
                 // display blue button
-			lcd_Fill(60, 10, 180, 60, GBLUE);
-			lcd_ShowStr(90, 20, "CLEAR", RED, BLACK, 24, 1);
-			draw_Status = DRAW;
+			lcd_Fill(10, 250, 130, 300, GREEN);
+			lcd_ShowStr(40, 260, "START", RED, BLACK, 24, 1);
+			game_Status = START;
 			break;
-		case DRAW:
-			if(isButtonClear()){
-				draw_Status = CLEAR;
-                    // clear board
-				lcd_Fill(0, 60, 240, 320, BLACK);
-                    // display green button
-				lcd_Fill(60, 10, 180, 60, GREEN);
-				lcd_ShowStr(90, 20, "CLEAR", RED, BLACK, 24, 1);
+		case START:
+			if(isButtonStart()){
+				game_Status = PLAY;
+				lcd_Clear(BLACK);
+				lcd_DrawRectangle(10, 10, 170, 170, GBLUE);
+				lcd_Fill(100, 180, 140, 220, GBLUE); // up arrow 1
+				lcd_Fill(100, 280, 140, 320, GBLUE); // down arrow 2
+				lcd_Fill(50, 230, 90, 270, GBLUE); // left arrow 3
+				lcd_Fill(150, 230, 190, 270, GBLUE); // right arrow 4
+				setup();
 			}
 			break;
-		case CLEAR:
-			if(!touch_IsTouched()) draw_Status = INIT;
+		case PLAY:
+			if (isNavigatorTouch() != 0) {
+//				lcd_ShowIntNum(90, 80, navigatorIndex, 1, RED, BLACK, 24);
+				switch(navigatorIndex){
+				case 3:
+					if(key!=2)
+					key = 1;
+					break;
+				case 4:
+					if(key!=1)
+					key = 2;
+					break;
+				case 1:
+					if(key!=4)
+					key = 3;
+					break;
+				case 2:
+					if(key!=3)
+					key = 4;
+					break;
+	//				case 'x':
+	//					gameover = 1;
+	//					break;
+				}
+			}
+			if(gameover){
+				lcd_Clear(BLACK);
+				game_Status = INIT;
+				lcd_ShowStr(90, 20, "GAME OVER", RED, BLACK, 24, 1);
+			}
+			break;
+		case GAMEOVER:
 			break;
 		default:
 			break;
@@ -251,33 +305,67 @@ void setup() {
 
     // Flag to signal the gameover
     gameover = 0;
-
+    key = 3;
     // Initial coordinates of the snake
     x = WIDTH / 2;
     y = HEIGHT / 2;
 
     // Initial coordinates of the fruit
-    fruitx = rand() % WIDTH;
-    fruity = rand() % HEIGHT;
-    while (fruitx == 0)
-        fruitx = rand() % WIDTH;
-
-    while (fruity == 0)
-        fruity = rand() % HEIGHT;
+    fruitx = rand() % (WIDTH - 5);
+    fruity = rand() % (HEIGHT - 5);
+	lcd_Fill(fruitx, fruity, fruitx+4, fruity+4, RED);
+    while (fruitx < 11)
+    	fruitx = rand() % (WIDTH - 5);
+    while (fruity < 11)
+    	fruity = rand() % (HEIGHT - 5);
 
     // Score initialzed
-    score = 0;
+//    score = 0;
 }
-void input() {}
+void draw() {
+
+    for (int j = 11; j < HEIGHT; j++) {
+        for (int i = 11; i < WIDTH; i++) {
+
+            // Creating snake's head
+            if (j == y && i == x)
+            	lcd_DrawPoint(i, j, RED);
+
+            // Creating the sanke's food
+            else if (j == fruity && i == fruitx)
+            	lcd_Fill(i, j, i+4, j+4, RED);
+
+            // Creating snake's body
+            else {
+                int prTail = 0;
+                for (int k = 0; k < snakeTailLen; k++) {
+                    if (snakeTailX[k] == i
+                        && snakeTailY[k] == j) {
+                    	lcd_DrawPoint(i, j, RED);
+                        prTail = 1;
+                    }
+                }
+                if (!prTail){
+                	if(j >= fruity && i >= fruitx && j <= fruity+4 && i <= fruitx+4)
+                		continue;
+                	else lcd_DrawPoint(i, j, BLACK);
+                }
+            }
+        }
+
+    }
+}
+
 void logic() {
 
-    // Updating the coordinates for continous
+    // Updating the coordinates for continuous
     // movement of snake
     int prevX = snakeTailX[0];
     int prevY = snakeTailY[0];
     int prev2X, prev2Y;
     snakeTailX[0] = x;
     snakeTailY[0] = y;
+    lcd_DrawPoint(x, y, RED);
     for (int i = 1; i < snakeTailLen; i++) {
         prev2X = snakeTailX[i];
         prev2Y = snakeTailY[i];
@@ -286,7 +374,7 @@ void logic() {
         prevX = prev2X;
         prevY = prev2Y;
     }
-
+    lcd_DrawPoint(snakeTailX[snakeTailLen-1], snakeTailY[snakeTailLen-1], BLACK);
     // Changing the direction of movement of snake
     switch (key) {
     case 1:
@@ -306,7 +394,7 @@ void logic() {
     }
 
     // If the game is over
-    if (x < 0 || x >= WIDTH || y < 0 || y >= HEIGHT)
+    if (x <= 10 || x >= WIDTH || y <= 10 || y >= HEIGHT)
         gameover = 1;
 
     // Checks for collision with the tail (o)
@@ -317,17 +405,19 @@ void logic() {
 
     // If snake reaches the fruit
     // then update the score
-    if (x == fruitx && y == fruity) {
-        fruitx = rand() % WIDTH;
-        fruity = rand() % HEIGHT;
-        while (fruitx == 0)
-            fruitx = rand() % WIDTH;
+    if (y >= fruity && x >= fruitx && y <= fruity+4 && x <= fruitx+4) {
+    	lcd_Fill(fruitx, fruity, fruitx+4, fruity+4, BLACK);
+    	fruitx = rand() % (WIDTH - 5);
+    	fruity = rand() % (HEIGHT - 5);
+        while (fruitx < 11)
+        	fruitx = rand() % (WIDTH - 5);
 
         // Generation of new fruit
-        while (fruity == 0)
-            fruity = rand() % HEIGHT;
-        score += 10;
-         snakeTailLen++;
+        while (fruity < 11)
+        	fruity = rand() % (HEIGHT - 5);
+        lcd_Fill(fruitx, fruity, fruitx+4, fruity+4, RED);
+//        score += 10;
+         snakeTailLen += 5;
     }
 }
 /* USER CODE END 4 */

@@ -43,8 +43,8 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-const int HUMID_MIN = 60;
-const int HUMID_MAX = 4070;
+const int HUMID_MIN = 42;
+const int HUMID_MAX = 3704;
 int mode = 0;
 float power, light, temp, humid;
 int hour, minute, second;
@@ -253,10 +253,6 @@ void setup_adc(){
 	lcd_ShowStr(10, 100, "Power:", RED, BLACK, 16, 0);
 	lcd_ShowStr(200, 100, "mW", RED, BLACK, 16, 0);
 	lcd_ShowStr(10, 120, "Light:", RED, BLACK, 16, 0);
-	if(1)
-		lcd_ShowStr(180, 120, "Strong", RED, BLACK, 16, 0);
-	else
-		lcd_ShowStr(180, 120, "Weak", RED, BLACK, 16, 0);
 	lcd_ShowStr(10, 140, "Humidity:", RED, BLACK, 16, 0);
 	lcd_ShowStr(180, 140, "%", RED, BLACK, 16, 0);
 	lcd_ShowStr(10, 160, "Temperature:", RED, BLACK, 16, 0);
@@ -287,7 +283,7 @@ void plot_graph(){
 //		float b = a - power;
 //		lcd_ShowFloatNum(100, 120, b, 6, RED, BLACK, 16);
 		if(old_power != 0)
-			lcd_DrawLine(x - 10, (65000 - old_power)*150/1000, x, (65000 - power)*150/1000, RED);  // X-axis starts at (10,10) and ends at (239,10)
+			lcd_DrawLine(x - 10, 320-(old_power*3/2), x, 320-(power*3/2), RED);  // X-axis starts at (10,10) and ends at (239,10)
 		lcd_ShowFloatNum(100, 100, power, 8, RED, BLACK, 16);
 		old_power =  power;
 	}
@@ -301,7 +297,12 @@ void test_Adc(){
 //		lcd_ShowFloatNum(130, 60, sensor_GetVoltage(), 6, RED, BLACK, 16);
 //		lcd_ShowStr(10, 80, "Current:", RED, BLACK, 16, 0);
 //		lcd_ShowFloatNum(130, 80, sensor_GetCurrent(), 6, RED, BLACK, 16);
-		lcd_ShowIntNum(130, 120, sensor_GetLight(), 4, RED, BLACK, 16);
+		int light = sensor_GetLight();
+		lcd_ShowIntNum(130, 120, light, 4, RED, BLACK, 16);
+		if(light > 1000)
+				lcd_ShowStr(180, 120, "Strong", RED, BLACK, 16, 0);
+			else
+				lcd_ShowStr(180, 120, "Weak  ", RED, BLACK, 16, 0);
 		lcd_ShowFloatNum(130, 100, sensor_GetVoltage()*sensor_GetCurrent(), 8, RED, BLACK, 16);
 		float humid = (sensor_GetPotentiometer()-HUMID_MIN)*100/HUMID_MAX;
 		lcd_ShowIntNum(130, 140, humid, 4, RED, BLACK, 16);
